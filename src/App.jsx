@@ -1,446 +1,416 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Bookmark, Trash2, Clock, ArrowLeft, BookOpen, Settings, Key, Server, X, Eye, EyeOff } from 'lucide-react';
 
-const CATEGORIES = {
-  basics: {
-    name: 'Основы',
-    emoji: '📚',
-    cards: [
-      { de: 'Hallo', ru: 'Привет', example: 'Hallo! Wie geht es dir?' },
-      { de: 'Danke', ru: 'Спасибо', example: 'Danke für deine Hilfe!' },
-      { de: 'Bitte', ru: 'Пожалуйста', example: 'Bitte schön!' },
-      { de: 'Ja', ru: 'Да', example: 'Ja, ich verstehe.' },
-      { de: 'Nein', ru: 'Нет', example: 'Nein, das stimmt nicht.' },
-      { de: 'Guten Morgen', ru: 'Доброе утро', example: 'Guten Morgen! Haben Sie gut geschlafen?' },
-      { de: 'Guten Abend', ru: 'Добрый вечер', example: 'Guten Abend, meine Damen und Herren!' },
-      { de: 'Auf Wiedersehen', ru: 'До свидания', example: 'Auf Wiedersehen! Bis morgen!' },
-      { de: 'Entschuldigung', ru: 'Извините', example: 'Entschuldigung, wo ist der Bahnhof?' },
-      { de: 'Ich verstehe nicht', ru: 'Я не понимаю', example: 'Ich verstehe nicht, können Sie wiederholen?' },
-    ],
-  },
-  food: {
-    name: 'Еда',
-    emoji: '🍔',
-    cards: [
-      { de: 'das Brot', ru: 'Хлеб', example: 'Ich kaufe frisches Brot.' },
-      { de: 'das Wasser', ru: 'Вода', example: 'Kann ich ein Glas Wasser haben?' },
-      { de: 'der Kaffee', ru: 'Кофе', example: 'Ich trinke jeden Morgen Kaffee.' },
-      { de: 'das Bier', ru: 'Пиво', example: 'Ein Bier, bitte!' },
-      { de: 'der Wein', ru: 'Вино', example: 'Möchten Sie Rot- oder Weißwein?' },
-      { de: 'der Apfel', ru: 'Яблоко', example: 'Der Apfel ist sehr süß.' },
-      { de: 'das Fleisch', ru: 'Мясо', example: 'Ich esse kein Fleisch.' },
-      { de: 'der Käse', ru: 'Сыр', example: 'Deutscher Käse ist lecker.' },
-      { de: 'die Milch', ru: 'Молоко', example: 'Die Milch ist im Kühlschrank.' },
-      { de: 'der Kuchen', ru: 'Пирог/Торт', example: 'Dieser Kuchen schmeckt wunderbar!' },
-    ],
-  },
-  travel: {
-    name: 'Путешествия',
-    emoji: '✈️',
-    cards: [
-      { de: 'der Bahnhof', ru: 'Вокзал', example: 'Der Bahnhof ist in der Nähe.' },
-      { de: 'der Flughafen', ru: 'Аэропорт', example: 'Wir fahren zum Flughafen.' },
-      { de: 'das Hotel', ru: 'Отель', example: 'Das Hotel hat fünf Sterne.' },
-      { de: 'die Straße', ru: 'Улица', example: 'Die Straße ist sehr lang.' },
-      { de: 'die Fahrkarte', ru: 'Билет', example: 'Ich brauche eine Fahrkarte nach Berlin.' },
-      { de: 'der Zug', ru: 'Поезд', example: 'Der Zug fährt um 10 Uhr ab.' },
-      { de: 'das Taxi', ru: 'Такси', example: 'Rufen Sie bitte ein Taxi!' },
-      { de: 'die Grenze', ru: 'Граница', example: 'Wir haben die Grenze überquert.' },
-      { de: 'der Reisepass', ru: 'Загранпаспорт', example: 'Zeigen Sie bitte Ihren Reisepass.' },
-      { de: 'die Abfahrt', ru: 'Отправление', example: 'Die Abfahrt ist um 8 Uhr.' },
-    ],
-  },
-  numbers: {
-    name: 'Числа',
-    emoji: '🔢',
-    cards: [
-      { de: 'eins', ru: 'Один', example: 'Ich habe eins gesehen.' },
-      { de: 'zwei', ru: 'Два', example: 'Zwei Kaffee, bitte.' },
-      { de: 'drei', ru: 'Три', example: 'Ich habe drei Kinder.' },
-      { de: 'zehn', ru: 'Десять', example: 'Es kostet zehn Euro.' },
-      { de: 'zwanzig', ru: 'Двадцать', example: 'Ich bin zwanzig Jahre alt.' },
-      { de: 'hundert', ru: 'Сто', example: 'Hundert Prozent richtig!' },
-      { de: 'tausend', ru: 'Тысяча', example: 'Tausend Dank!' },
-      { de: 'die Hälfte', ru: 'Половина', example: 'Die Hälfte ist schon fertig.' },
-      { de: 'null', ru: 'Ноль', example: 'Null Grad draußen.' },
-      { de: 'eine Million', ru: 'Миллион', example: 'Eine Million Menschen leben hier.' },
-    ],
-  },
-  phrases: {
-    name: 'Фразы',
-    emoji: '💬',
-    cards: [
-      { de: 'Wie geht es Ihnen?', ru: 'Как у Вас дела?', example: 'Hallo! Wie geht es Ihnen heute?' },
-      { de: 'Ich spreche kein Deutsch', ru: 'Я не говорю по-немецки', example: 'Entschuldigung, ich spreche kein Deutsch.' },
-      { de: 'Wo ist die Toilette?', ru: 'Где туалет?', example: 'Entschuldigung, wo ist die Toilette?' },
-      { de: 'Ich möchte bestellen', ru: 'Я хотел(а) бы заказать', example: 'Ich möchte bestellen, bitte.' },
-      { de: 'Was kostet das?', ru: 'Сколько это стоит?', example: 'Was kostet das T-Shirt?' },
-      { de: 'Sprechen Sie Englisch?', ru: 'Вы говорите по-английски?', example: 'Sprechen Sie Englisch, bitte?' },
-      { de: 'Ich bin verloren', ru: 'Я заблудился', example: 'Hilfe! Ich bin verloren.' },
-      { de: 'Es tut mir leid', ru: 'Мне очень жаль', example: 'Es tut mir leid, das war mein Fehler.' },
-      { de: 'Ich liebe dich', ru: 'Я люблю тебя', example: 'Ich liebe dich von ganzem Herzen.' },
-      { de: 'Alles Gute!', ru: 'Всего хорошего!', example: 'Alles Gute zum Geburtstag!' },
-    ],
-  },
-};
+const FlashcardApp = () => {
+  const [mode, setMode] = useState('create');
+  const [topic, setTopic] = useState('');
+  const [flashcards, setFlashcards] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [activeTab, setActiveTab] = useState('describe');
+  const [animating, setAnimating] = useState(false);
+  const [savedSets, setSavedSets] = useState([]);
+  const [currentSetTitle, setCurrentSetTitle] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [apiMode, setApiMode] = useState(() => localStorage.getItem('apiMode') || 'proxy');
+  const [apiKey, setApiKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
-const STORAGE_KEY = 'uchu-deutsch-progress';
+  const SYSTEM_PROMPT = `Ты \u2014 преподаватель немецкого языка для русскоязычных студентов.
+Твоя задача \u2014 создавать обучающие флеш-карточки.
 
-function loadProgress() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : {};
-  } catch {
-    return {};
-  }
-}
+Правила:
+- На лицевой стороне (front): немецкое слово или фраза. Для существительных обязательно указывай артикль (der/die/das) и форму множественного числа. Для глаголов \u2014 инфинитив.
+- На обратной стороне (back): русский перевод, затем через пустую строку \u2014 пример употребления на немецком с переводом на русский. НЕ пиши слово \u00abПример:\u00bb перед примером, просто дай предложение.
+- Карточки должны быть практичными и полезными для повседневного общения.
+- Уровень сложности: от A1 до B2, адаптируйся под тему.
+- Отвечай ТОЛЬКО валидным JSON-массивом без какого-либо текста вокруг.`;
 
-function saveProgress(progress) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
-  } catch {}
-}
+  // ===== STORAGE (localStorage) =====
+  const getKeysByPrefix = (prefix) => {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(prefix)) keys.push(k);
+    }
+    return keys;
+  };
 
-function FlashCard({ card, isFlipped, onFlip }) {
-  return (
-    <div
-      className="relative w-full max-w-md h-64 cursor-pointer perspective-1000"
-      onClick={onFlip}
-    >
-      <div
-        className={`relative w-full h-full transition-transform duration-500 transform-style-3d ${
-          isFlipped ? 'rotate-y-180' : ''
-        }`}
-      >
-        {/* Front */}
-        <div className="absolute inset-0 backface-hidden rounded-2xl bg-white shadow-xl border border-gray-100 flex flex-col items-center justify-center p-6">
-          <p className="text-3xl font-bold text-gray-800 mb-2">{card.de}</p>
-          <p className="text-sm text-gray-400 mt-4">Нажмите, чтобы перевернуть</p>
-        </div>
-        {/* Back */}
-        <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-xl flex flex-col items-center justify-center p-6">
-          <p className="text-2xl font-bold text-white mb-2">{card.ru}</p>
-          <p className="text-sm text-blue-100 italic mt-2">«{card.example}»</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ChatPanel({ onClose }) {
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Привет! Я помогу тебе с немецким. Спроси меня о грамматике, переводах или попроси объяснить слово!' },
-  ]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const messagesEndRef = React.useRef(null);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg = { role: 'user', content: input.trim() };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
-    setInput('');
-    setLoading(true);
-
+  const loadSavedSets = () => {
+    setLoadingHistory(true);
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1024,
-          system: 'Ты — помощник для изучения немецкого языка. Отвечай кратко на русском, давай примеры на немецком с переводом.',
-          messages: newMessages.filter((m) => m.role !== 'assistant' || m !== messages[0]).map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
-      });
+      const keys = getKeysByPrefix('flashset:');
+      const sets = keys.map(k => {
+        try { return JSON.parse(localStorage.getItem(k)); }
+        catch { return null; }
+      }).filter(Boolean);
+      sets.sort((a, b) => b.createdAt - a.createdAt);
+      setSavedSets(sets);
+    } catch { setSavedSets([]); }
+    setLoadingHistory(false);
+  };
 
-      const data = await res.json();
-      if (data.content && data.content[0]) {
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: data.content[0].text },
-        ]);
-      } else if (data.error) {
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: 'Ошибка: ' + (data.error.message || data.error) },
-        ]);
-      }
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: 'Ошибка сети. Попробуйте ещё раз.' },
-      ]);
-    } finally {
-      setLoading(false);
+  const saveCurrentSet = () => {
+    const id = Date.now().toString();
+    const setData = { id, title: currentSetTitle || topic.slice(0, 60), cards: flashcards, createdAt: Date.now(), cardCount: flashcards.length };
+    try {
+      localStorage.setItem(`flashset:${id}`, JSON.stringify(setData));
+      setIsSaved(true);
+      setSavedSets(prev => [setData, ...prev]);
+    } catch { alert('Не удалось сохранить.'); }
+  };
+
+  const deleteSet = (id) => {
+    try {
+      localStorage.removeItem(`flashset:${id}`);
+      setSavedSets(prev => prev.filter(s => s.id !== id));
+      setConfirmDelete(null);
+    } catch { alert('Не удалось удалить.'); }
+  };
+
+  const openSavedSet = (set) => {
+    setFlashcards(set.cards); setCurrentSetTitle(set.title);
+    setCurrentIndex(0); setFlipped(false); setIsSaved(true); setMode('study');
+  };
+
+  useEffect(() => { loadSavedSets(); }, []);
+
+  // ===== API CALL =====
+  const callAPI = async (userPrompt) => {
+    const body = {
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userPrompt }]
+    };
+
+    if (apiMode === 'key' && apiKey) {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      return await res.json();
+    } else {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+      return await res.json();
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
-      <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl h-[80vh] sm:h-[600px] flex flex-col shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-bold text-lg">🤖 AI-помощник</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-          >
-            &times;
-          </button>
+  // ===== GENERATE =====
+  const generateFlashcards = async () => {
+    if (!topic.trim()) return;
+    if (apiMode === 'key' && !apiKey) { setShowSettings(true); return; }
+    setMode('loading'); setIsSaved(false); setCurrentSetTitle(topic.slice(0, 60));
+
+    let userPrompt;
+    if (activeTab === 'paste') {
+      userPrompt = `Проанализируй следующий немецкий текст и извлеки из него 5\u201310 ключевых слов или выражений для изучения.\n\nТекст:\n"""\n${topic}\n"""\n\nФормат \u2014 только JSON:\n[\n  {"front": "das Wort, -\u0308er", "back": "слово\\n\\nDieses Wort ist sehr wichtig. \u2014 Это слово очень важное."}\n]`;
+    } else {
+      userPrompt = `Создай 10 флеш-карточек по теме: "${topic}".\n\nФормат \u2014 только JSON:\n[\n  {"front": "слово с артиклем", "back": "перевод\\n\\nпредложение \u2014 перевод"}\n]`;
+    }
+
+    try {
+      const data = await callAPI(userPrompt);
+      const text = data.content.map(i => i.text || "").join("\n");
+      const clean = text.replace(/```json|```/g, "").trim();
+      setFlashcards(JSON.parse(clean));
+      setCurrentIndex(0); setFlipped(false); setMode('study');
+    } catch (e) {
+      console.error(e);
+      alert(apiMode === 'key' ? 'Ошибка API. Проверьте ключ.' : 'Ошибка сервера. Проверьте настройки.');
+      setMode('create');
+    }
+  };
+
+  const handleFlip = () => setFlipped(!flipped);
+  const navigate = (dir) => {
+    const next = currentIndex + dir;
+    if (next < 0 || next >= flashcards.length || animating) return;
+    setAnimating(true);
+    setTimeout(() => { setFlipped(false); setCurrentIndex(next); setTimeout(() => setAnimating(false), 50); }, 150);
+  };
+
+  useEffect(() => {
+    const h = (e) => {
+      if (mode !== 'study') return;
+      if (e.key === 'ArrowLeft') navigate(-1);
+      if (e.key === 'ArrowRight') navigate(1);
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); handleFlip(); }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [mode, currentIndex, flashcards.length, flipped, animating]);
+
+  // ===== STYLES =====
+  const lifted = { boxShadow: '0 8px 24px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.15)' };
+  const liftedBtn = { boxShadow: '0 6px 20px rgba(0,0,0,0.2), 0 2px 4px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.1)' };
+  const liftedCard = { boxShadow: '0 16px 48px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6)' };
+  const liftedNav = { boxShadow: '0 4px 14px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.15)' };
+  const tShadow = { textShadow: '0 3px 8px rgba(0,0,0,0.25)' };
+  const formatDate = (ts) => new Date(ts).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  // ===== SETTINGS MODAL =====
+  const SettingsModal = () => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 relative" style={liftedCard}>
+        <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        <h2 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2"><Settings size={20} /> Настройки API</h2>
+        <div className="mb-5">
+          <p className="text-sm text-gray-500 mb-3">Способ подключения к Claude</p>
+          <div className="flex gap-2">
+            <button onClick={() => { setApiMode('proxy'); localStorage.setItem('apiMode', 'proxy'); }}
+              className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${apiMode === 'proxy' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              style={apiMode === 'proxy' ? liftedNav : {}}><Server size={16} /> Серверный прокси</button>
+            <button onClick={() => { setApiMode('key'); localStorage.setItem('apiMode', 'key'); }}
+              className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${apiMode === 'key' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              style={apiMode === 'key' ? liftedNav : {}}><Key size={16} /> Свой ключ</button>
+          </div>
         </div>
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${
-                  msg.role === 'user'
-                    ? 'bg-blue-500 text-white rounded-br-md'
-                    : 'bg-gray-100 text-gray-800 rounded-bl-md'
-                }`}
-              >
-                {msg.content}
-              </div>
+        {apiMode === 'proxy' ? (
+          <div className="bg-blue-50 rounded-xl p-4 text-sm text-blue-700">
+            <p className="font-medium mb-1">Серверный прокси</p>
+            <p className="text-blue-600/80">Запросы идут через <code className="bg-blue-100 px-1 rounded">/api/chat</code>. API-ключ хранится на сервере.</p>
+          </div>
+        ) : (
+          <div>
+            <label className="text-sm text-gray-500 mb-2 block">API-ключ Anthropic</label>
+            <div className="relative">
+              <input type={showKey ? 'text' : 'password'} value={apiKey} onChange={(e) => setApiKey(e.target.value)}
+                placeholder="sk-ant-..." className="w-full px-4 py-3 pr-12 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+              <button onClick={() => setShowKey(!showKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
-          ))}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-2 text-sm text-gray-400">
-                Пишет...
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-        {/* Input */}
-        <div className="p-4 border-t flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="Спросите о немецком..."
-            className="flex-1 border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={loading || !input.trim()}
-            className="bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            ↑
-          </button>
-        </div>
+            <div className="bg-amber-50 rounded-xl p-3 mt-3 text-xs text-amber-700">Ключ хранится только в памяти и исчезает при закрытии вкладки.</div>
+          </div>
+        )}
+        <button onClick={() => setShowSettings(false)} className="w-full mt-5 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 active:translate-y-0.5 transition-all" style={liftedBtn}>Сохранить</button>
       </div>
     </div>
   );
-}
 
-export default function App() {
-  const [screen, setScreen] = useState('home');
-  const [category, setCategory] = useState(null);
-  const [cardIndex, setCardIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [progress, setProgress] = useState(loadProgress);
-  const [showChat, setShowChat] = useState(false);
+  const SettingsButton = () => (
+    <button onClick={() => setShowSettings(true)} className="p-2 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all" title="Настройки API"><Settings size={18} /></button>
+  );
 
-  const cards = category ? CATEGORIES[category].cards : [];
-  const currentCard = cards[cardIndex];
+  const ApiIndicator = () => (
+    <div className="flex items-center gap-1.5 text-xs text-white/40">
+      {apiMode === 'proxy' ? <Server size={12} /> : <Key size={12} />}
+      {apiMode === 'proxy' ? 'прокси' : 'свой ключ'}
+    </div>
+  );
 
-  const markKnown = useCallback(() => {
-    if (!category || !currentCard) return;
-    const key = `${category}:${currentCard.de}`;
-    const newProgress = { ...progress, [key]: true };
-    setProgress(newProgress);
-    saveProgress(newProgress);
-    nextCard();
-  }, [category, currentCard, progress, cardIndex, cards.length]);
-
-  const nextCard = () => {
-    setIsFlipped(false);
-    setCardIndex((prev) => (prev + 1) % cards.length);
-  };
-
-  const prevCard = () => {
-    setIsFlipped(false);
-    setCardIndex((prev) => (prev - 1 + cards.length) % cards.length);
-  };
-
-  const startCategory = (cat) => {
-    setCategory(cat);
-    setCardIndex(0);
-    setIsFlipped(false);
-    setScreen('cards');
-  };
-
-  const goHome = () => {
-    setScreen('home');
-    setCategory(null);
-    setCardIndex(0);
-    setIsFlipped(false);
-  };
-
-  const getCategoryProgress = (cat) => {
-    const catCards = CATEGORIES[cat].cards;
-    const known = catCards.filter((c) => progress[`${cat}:${c.de}`]).length;
-    return { known, total: catCards.length };
-  };
-
-  const totalCards = Object.values(CATEGORIES).reduce((sum, c) => sum + c.cards.length, 0);
-  const totalKnown = Object.keys(progress).filter((k) => progress[k]).length;
-
-  if (screen === 'home') {
+  // ========== CREATE ==========
+  if (mode === 'create') {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-        {/* Header */}
-        <div className="bg-white shadow-sm">
-          <div className="max-w-3xl mx-auto px-4 py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-800">🇩🇪 Учу немецкий</h1>
-                <p className="text-gray-500 mt-1">Флэш-карты с AI-помощником</p>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-blue-600">{totalKnown}/{totalCards}</p>
-                <p className="text-xs text-gray-400">изучено</p>
-              </div>
-            </div>
-            {/* Progress bar */}
-            <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-500 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${totalCards > 0 ? (totalKnown / totalCards) * 100 : 0}%` }}
-              />
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#6A9BCC' }}>
+        {showSettings && <SettingsModal />}
+        <div className="w-full max-w-lg p-4 sm:p-8">
+          <div className="flex items-center justify-center mb-1">
+            <h1 className="text-white text-2xl sm:text-4xl font-bold text-center" style={tShadow}>Учу немецкий</h1>
+            <div className="ml-2"><SettingsButton /></div>
+          </div>
+          <div className="flex justify-center mb-6"><ApiIndicator /></div>
+          <div className="flex justify-center mb-5 sm:mb-6">
+            <div className="bg-white/20 p-1 rounded-full inline-flex" style={lifted}>
+              <button onClick={() => setActiveTab('paste')}
+                className={`px-4 sm:px-6 py-2 rounded-full font-medium transition-all text-sm sm:text-base ${activeTab === 'paste' ? 'bg-white text-gray-700' : 'text-white hover:text-white/90'}`}
+                style={activeTab === 'paste' ? liftedNav : {}}>Вставить текст</button>
+              <button onClick={() => setActiveTab('describe')}
+                className={`px-4 sm:px-6 py-2 rounded-full font-medium transition-all text-sm sm:text-base ${activeTab === 'describe' ? 'bg-white text-gray-700' : 'text-white hover:text-white/90'}`}
+                style={activeTab === 'describe' ? liftedNav : {}}>Описать тему</button>
             </div>
           </div>
-        </div>
-
-        {/* Categories */}
-        <div className="max-w-3xl mx-auto px-4 py-8">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {Object.entries(CATEGORIES).map(([key, cat]) => {
-              const { known, total } = getCategoryProgress(key);
-              const pct = Math.round((known / total) * 100);
-              return (
-                <button
-                  key={key}
-                  onClick={() => startCategory(key)}
-                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all text-left"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-3xl">{cat.emoji}</span>
-                    <span className="text-sm font-medium text-gray-400">{known}/{total}</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-800">{cat.name}</h3>
-                  <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5">
-                    <div
-                      className="bg-blue-500 h-1.5 rounded-full transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </button>
-              );
-            })}
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8" style={liftedCard}>
+            <textarea value={topic} onChange={(e) => setTopic(e.target.value)}
+              placeholder={activeTab === 'describe'
+                ? 'Опишите тему для карточек...\n\nНапример:\n\u2022 еда и напитки\n\u2022 фразы для путешествий\n\u2022 глаголы с предлогами'
+                : 'Вставьте немецкий текст сюда...\n\nИз него будут извлечены ключевые слова и выражения для изучения.'}
+              className="w-full h-44 sm:h-52 text-gray-900 placeholder-gray-400 resize-none focus:outline-none text-base sm:text-lg" style={{ lineHeight: '1.6' }} />
           </div>
-
-          {/* Reset */}
-          {totalKnown > 0 && (
-            <button
-              onClick={() => { setProgress({}); saveProgress({}); }}
-              className="mt-8 mx-auto block text-sm text-gray-400 hover:text-red-500 transition-colors"
-            >
-              Сбросить прогресс
-            </button>
+          <button onClick={generateFlashcards}
+            className="w-full mt-6 sm:mt-8 py-3.5 sm:py-4 bg-gray-900 text-white font-medium rounded-full hover:bg-gray-800 active:translate-y-0.5 transition-all text-base sm:text-lg"
+            style={liftedBtn}>Сгенерировать карточки</button>
+          {savedSets.length > 0 && (
+            <button onClick={() => { setMode('history'); loadSavedSets(); }}
+              className="w-full mt-3 py-3 sm:py-3.5 bg-white/15 text-white font-medium rounded-full hover:bg-white/25 active:translate-y-0.5 transition-all text-sm sm:text-base flex items-center justify-center gap-2"
+              style={liftedNav}><Clock size={18} /> Сохранённые наборы ({savedSets.length})</button>
           )}
         </div>
-
-        {/* Chat FAB */}
-        <button
-          onClick={() => setShowChat(true)}
-          className="fixed bottom-6 right-6 bg-blue-500 text-white w-14 h-14 rounded-full shadow-lg hover:bg-blue-600 transition-colors flex items-center justify-center text-2xl"
-          title="AI-помощник"
-        >
-          🤖
-        </button>
-        {showChat && <ChatPanel onClose={() => setShowChat(false)} />}
       </div>
     );
   }
 
-  // Cards screen
-  const isKnown = currentCard && progress[`${category}:${currentCard.de}`];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
-      {/* Top bar */}
-      <div className="bg-white shadow-sm px-4 py-3 flex items-center justify-between">
-        <button onClick={goHome} className="text-blue-500 font-medium text-sm">
-          ← Назад
-        </button>
-        <h2 className="font-bold text-gray-800">
-          {CATEGORIES[category]?.emoji} {CATEGORIES[category]?.name}
-        </h2>
-        <span className="text-sm text-gray-400">
-          {cardIndex + 1}/{cards.length}
-        </span>
-      </div>
-
-      {/* Card area */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-        {currentCard && (
-          <FlashCard
-            card={currentCard}
-            isFlipped={isFlipped}
-            onFlip={() => setIsFlipped(!isFlipped)}
-          />
-        )}
-
-        {/* Navigation */}
-        <div className="flex items-center gap-4 mt-8">
-          <button
-            onClick={prevCard}
-            className="bg-white border border-gray-200 text-gray-600 w-12 h-12 rounded-full shadow-sm hover:bg-gray-50 flex items-center justify-center text-lg"
-          >
-            ←
-          </button>
-          <button
-            onClick={markKnown}
-            className={`px-6 py-3 rounded-full font-medium text-sm shadow-sm transition-all ${
-              isKnown
-                ? 'bg-green-100 text-green-700 border border-green-200'
-                : 'bg-green-500 text-white hover:bg-green-600'
-            }`}
-          >
-            {isKnown ? '✓ Изучено' : 'Знаю!'}
-          </button>
-          <button
-            onClick={nextCard}
-            className="bg-white border border-gray-200 text-gray-600 w-12 h-12 rounded-full shadow-sm hover:bg-gray-50 flex items-center justify-center text-lg"
-          >
-            →
-          </button>
+  // ========== LOADING ==========
+  if (mode === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#6A9BCC' }}>
+        <div className="text-center">
+          <h1 className="text-white text-2xl sm:text-4xl font-medium mb-3 sm:mb-4" style={tShadow}>Генерируем карточки...</h1>
+          <p className="text-white/80 text-sm sm:text-base mb-8">Это может занять несколько секунд</p>
+          <div className="flex justify-center">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" style={{ filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.2))' }}></div>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Chat FAB */}
-      <button
-        onClick={() => setShowChat(true)}
-        className="fixed bottom-6 right-6 bg-blue-500 text-white w-14 h-14 rounded-full shadow-lg hover:bg-blue-600 transition-colors flex items-center justify-center text-2xl"
-        title="AI-помощник"
-      >
-        🤖
-      </button>
-      {showChat && <ChatPanel onClose={() => setShowChat(false)} />}
-    </div>
-  );
-}
+    // ========== FLASHCARDS ==========
+  if (mode === 'flashcards') {
+    const card = flashcards[currentIndex];
+    const progress = ((currentIndex + 1) / flashcards.length) * 100;
+
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#6A9BCC' }}>
+        {showSettings && <SettingsModal />}
+        <div className="w-full max-w-lg">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <SettingsButton />
+              <ApiIndicator />
+            </div>
+            <p className="text-white/80 text-xs sm:text-sm">{currentIndex + 1} / {flashcards.length}</p>
+          </div>
+
+          <div className="w-full bg-white/20 rounded-full h-1.5 mb-4 sm:mb-6" style={lifted}>
+            <div className="bg-white h-1.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+          </div>
+
+          <div
+            className="relative cursor-pointer"
+            style={{ perspective: '1000px', minHeight: '260px' }}
+            onClick={() => { if (!animating) { setAnimating(true); setFlipped(!flipped); setTimeout(() => setAnimating(false), 400); } }}
+          >
+            <div style={{
+              transformStyle: 'preserve-3d',
+              transition: 'transform 0.4s ease',
+              transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+              position: 'relative',
+              minHeight: '260px'
+            }}>
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-center absolute inset-0 flex flex-col items-center justify-center" style={{ ...liftedCard, backfaceVisibility: 'hidden' }}>
+                <p className="text-gray-800 text-xl sm:text-3xl font-bold leading-snug">{card.front}</p>
+                <p className="text-gray-400 text-xs sm:text-sm mt-4">{'\u{1F447}'} нажмите, чтобы перевернуть</p>
+              </div>
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-center absolute inset-0 flex flex-col items-center justify-center" style={{ ...liftedCard, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                <p className="text-gray-700 text-base sm:text-xl leading-relaxed whitespace-pre-line">{card.back}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-4 sm:mt-6">
+            <button
+              onClick={() => { if (currentIndex > 0) { setFlipped(false); setCurrentIndex(currentIndex - 1); } }}
+              disabled={currentIndex === 0}
+              className={`p-3 sm:p-4 rounded-full transition-all ${currentIndex === 0 ? 'text-white/30' : 'bg-white/15 text-white hover:bg-white/25 active:translate-y-0.5'}`}
+              style={currentIndex === 0 ? {} : liftedNav}
+            >
+              <ChevronLeft size={22} />
+            </button>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setFlipped(false); setCurrentIndex(0); setMode('create'); setIsSaved(false); setCurrentSetTitle(''); }}
+                className="px-4 sm:px-5 py-2.5 sm:py-3 bg-white/15 text-white text-sm font-medium rounded-full hover:bg-white/25 active:translate-y-0.5 transition-all"
+                style={liftedNav}
+              >
+                Новая тема
+              </button>
+              {!isSaved && (
+                <button
+                  onClick={() => {
+                    const title = currentSetTitle || topic || '\u0411\u0435\u0437 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044F';
+                    const id = Date.now().toString();
+                    const setData = { id, title, cards: flashcards, cardCount: flashcards.length, createdAt: new Date().toISOString() };
+                    localStorage.setItem(`flashset_${id}`, JSON.stringify(setData));
+                    setSavedSets(prev => [setData, ...prev]);
+                    setIsSaved(true);
+                  }}
+                  className="px-4 sm:px-5 py-2.5 sm:py-3 bg-white text-gray-800 text-sm font-medium rounded-full hover:bg-gray-50 active:translate-y-0.5 transition-all flex items-center gap-1.5"
+                  style={liftedNav}
+                >
+                  <Bookmark size={16} /> Сохранить
+                </button>
+              )}
+              {isSaved && (
+                <div className="px-4 sm:px-5 py-2.5 sm:py-3 bg-white/15 text-white/70 text-sm font-medium rounded-full flex items-center gap-1.5">
+                  <Bookmark size={16} /> Сохранено
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => { if (currentIndex < flashcards.length - 1) { setFlipped(false); setCurrentIndex(currentIndex + 1); } }}
+              disabled={currentIndex === flashcards.length - 1}
+              className={`p-3 sm:p-4 rounded-full transition-all ${currentIndex === flashcards.length - 1 ? 'text-white/30' : 'bg-white/15 text-white hover:bg-white/25 active:translate-y-0.5'}`}
+              style={currentIndex === flashcards.length - 1 ? {} : liftedNav}
+            >
+              <ChevronRight size={22} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
+  // ========== HISTORY ==========
+  if (mode === 'history') {
+    return (
+      <div className="min-h-screen px-4 py-8 sm:py-12" style={{ backgroundColor: '#6A9BCC' }}>
+        {showSettings && <SettingsModal />}
+        <div className="w-full max-w-lg mx-auto">
+          <button onClick={() => setMode('create')} className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-6 text-sm sm:text-base">
+            <ArrowLeft size={18} /> Назад
+          </button>
+          <h1 className="text-white text-xl sm:text-3xl font-bold mb-6" style={tShadow}>Сохранённые наборы</h1>
+          {loadingHistory ? (
+            <div className="flex justify-center py-12"><div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin"></div></div>
+          ) : savedSets.length === 0 ? (
+            <div className="bg-white/10 rounded-2xl p-8 text-center" style={lifted}>
+              <BookOpen size={40} className="mx-auto text-white/40 mb-3" />
+              <p className="text-white/60 text-base">Пока нет сохранённых наборов</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {savedSets.map((set) => (
+                <div key={set.id} className="bg-white rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4" style={liftedCard}>
+                  <button onClick={() => openSavedSet(set)} className="flex-1 text-left min-w-0">
+                    <h3 className="font-semibold text-gray-800 text-base sm:text-lg truncate">{set.title}</h3>
+                    <p className="text-gray-400 text-xs sm:text-sm mt-1">{set.cardCount} карточек \u00b7 {formatDate(set.createdAt)}</p>
+                  </button>
+                  {confirmDelete === set.id ? (
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => deleteSet(set.id)} className="px-3 py-1.5 bg-red-500 text-white text-xs sm:text-sm rounded-full font-medium hover:bg-red-600 active:translate-y-0.5 transition-all" style={liftedNav}>Да</button>
+                      <button onClick={() => setConfirmDelete(null)} className="px-3 py-1.5 bg-gray-200 text-gray-600 text-xs sm:text-sm rounded-full font-medium hover:bg-gray-300 active:translate-y-0.5 transition-all" style={liftedNav}>Нет</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setConfirmDelete(set.id)} className="p-2.5 rounded-full text-gray-300 hover:text-red-400 hover:bg-red-50 transition-all shrink-0"><Trash2 size={18} /></button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  
+export default FlashcardApp;
