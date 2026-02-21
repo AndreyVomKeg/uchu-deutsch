@@ -410,7 +410,9 @@ const FlashcardApp = () => {
         </div>
       </div>
     );
-  }
+    }
 
-  
+  return null;
+};
+
 export default FlashcardApp;
