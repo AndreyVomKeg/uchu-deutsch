@@ -1,0 +1,17 @@
+{
+  "name": "Учу немецкий",
+  "short_name": "Учу немецкий",
+  "description": "Флеш-карточки для изучения немецкого языка",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#6A9BCC",
+  "theme_color": "#6A9BCC",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
