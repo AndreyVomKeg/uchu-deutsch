@@ -393,7 +393,7 @@ const FlashcardApp = () => {
                 <div key={set.id} className="bg-white rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4" style={liftedCard}>
                   <button onClick={() => openSavedSet(set)} className="flex-1 text-left min-w-0">
                     <h3 className="font-semibold text-gray-800 text-base sm:text-lg truncate">{set.title}</h3>
-                    <p className="text-gray-400 text-xs sm:text-sm mt-1">{set.cardCount} карточек \u00b7 {formatDate(set.createdAt)}</p>
+                                <p className="text-gray-400 text-xs sm:text-sm mt-1">{set.cardCount} карточек · {formatDate(set.createdAt)}</p>
                   </button>
                   {confirmDelete === set.id ? (
                     <div className="flex gap-2 shrink-0">
