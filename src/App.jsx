@@ -272,7 +272,7 @@ const FlashcardApp = () => {
   }
 
     // ========== FLASHCARDS ==========
-  if (mode === 'flashcards') {
+  if (mode === 'study') {
     const card = flashcards[currentIndex];
     const progress = ((currentIndex + 1) / flashcards.length) * 100;
 
