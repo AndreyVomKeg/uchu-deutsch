@@ -337,8 +337,8 @@ const FlashcardApp = () => {
                   onClick={() => {
                     const title = currentSetTitle || topic || '\u0411\u0435\u0437 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044F';
                     const id = Date.now().toString();
-                    const setData = { id, title, cards: flashcards, cardCount: flashcards.length, createdAt: new Date().toISOString() };
-                    localStorage.setItem(`flashset_${id}`, JSON.stringify(setData));
+                    const setData = { id, title, cards: flashcards, cardCount: flashcards.length, createdAt: Date.now() };
+                    localStorage.setItem(`flashset:${id}`, JSON.stringify(setData));
                     setSavedSets(prev => [setData, ...prev]);
                     setIsSaved(true);
                   }}
