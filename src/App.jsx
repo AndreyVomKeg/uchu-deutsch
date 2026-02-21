@@ -306,7 +306,7 @@ const FlashcardApp = () => {
             }}>
               <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-center absolute inset-0 flex flex-col items-center justify-center" style={{ ...liftedCard, backfaceVisibility: 'hidden' }}>
                 <p className="text-gray-800 text-xl sm:text-3xl font-bold leading-snug">{card.front}</p>
-                <p className="text-gray-400 text-xs sm:text-sm mt-4">{'\u{1F447}'} нажмите, чтобы перевернуть</p>
+                <p className="text-gray-400 text-xs sm:text-sm mt-4">нажмите, чтобы перевернуть</p>
               </div>
               <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-center absolute inset-0 flex flex-col items-center justify-center" style={{ ...liftedCard, backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                 <p className="text-gray-700 text-base sm:text-xl leading-relaxed whitespace-pre-line">{card.back}</p>
