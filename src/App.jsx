@@ -326,7 +326,7 @@ const FlashcardApp = () => {
 
             <div className="flex gap-2">
               <button
-                onClick={() => { setFlipped(false); setCurrentIndex(0); setMode('create'); setIsSaved(false); setCurrentSetTitle(''); }}
+                onClick={() => { setFlipped(false); setCurrentIndex(0); setMode('create'); setIsSaved(false); setCurrentSetTitle(''); setTopic(''); }}
                 className="px-4 sm:px-5 py-2.5 sm:py-3 bg-white/15 text-white text-sm font-medium rounded-full hover:bg-white/25 active:translate-y-0.5 transition-all"
                 style={liftedNav}
               >
