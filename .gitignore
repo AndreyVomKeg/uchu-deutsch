@@ -138,3 +138,8 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Generated PWA icons (auto-generated from source)
+public/icons/icon-180.png
+public/icons/icon-192.png
+public/icons/icon-512.png
+
