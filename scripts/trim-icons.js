@@ -7,7 +7,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 const iconsDir = resolve(root, 'public/icons');
 
-// Target blue background color from the icon design
 const BG = { r: 106, g: 155, b: 204 };
 
 const sizes = [
@@ -15,6 +14,10 @@ const sizes = [
   { name: 'icon-192.png', size: 192 },
   { name: 'icon-512.png', size: 512 }
 ];
+
+function colorDist(r1, g1, b1, r2, g2, b2) {
+  return Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2);
+}
 
 function floodFillWithColor(data, width, height, channels) {
   const visited = new Uint8Array(width * height);
@@ -26,26 +29,24 @@ function floodFillWithColor(data, width, height, channels) {
     const r = data[idx];
     const g = data[idx + 1];
     const b = data[idx + 2];
-    // Replace if light/white/gray (background outside rounded rect)
-    // The blue bg is r:106 g:155 b:204 - these are NOT light
-    // Light pixels have all channels > 180
-    if (r > 180 && g > 180 && b > 180) return true;
-    // Also replace near-white with some transparency
-    if (channels === 4) {
-      const a = data[idx + 3];
-      if (a < 200) return true;
-    }
+    // Calculate distance from target blue BG
+    const dist = colorDist(r, g, b, BG.r, BG.g, BG.b);
+    // Replace if pixel is far from the blue BG (> 60 distance)
+    // This catches white, light gray, light blue transition pixels
+    if (dist > 60) return true;
+    // Also replace semi-transparent pixels
+    if (channels === 4 && data[idx + 3] < 200) return true;
     return false;
   };
 
   // Seed from all 4 edges
   for (let x = 0; x < width; x++) {
-    queue.push(x); // top row
-    queue.push((height - 1) * width + x); // bottom row
+    queue.push(x);
+    queue.push((height - 1) * width + x);
   }
   for (let y = 0; y < height; y++) {
-    queue.push(y * width); // left col
-    queue.push(y * width + (width - 1)); // right col
+    queue.push(y * width);
+    queue.push(y * width + (width - 1));
   }
 
   while (head < queue.length) {
@@ -59,14 +60,12 @@ function floodFillWithColor(data, width, height, channels) {
 
     if (!shouldReplace(idx)) continue;
 
-    // Replace with blue BG color (fully opaque)
     data[idx] = BG.r;
     data[idx + 1] = BG.g;
     data[idx + 2] = BG.b;
     if (channels === 4) data[idx + 3] = 255;
     replaced++;
 
-    // Add neighbors
     if (x > 0) queue.push(pos - 1);
     if (x < width - 1) queue.push(pos + 1);
     if (y > 0) queue.push(pos - width);
@@ -80,26 +79,33 @@ async function main() {
   const src = resolve(iconsDir, 'icon-512.png');
   const img = sharp(src);
   const meta = await img.metadata();
-  console.log(`Source: ${meta.width}x${meta.height}, ${meta.channels} channels`);
+  console.log(`Source: ${meta.width}x${meta.height}, ${meta.channels} ch`);
 
-  // Get raw pixel data
   const raw = await img.raw().toBuffer();
   const { width, height, channels } = meta;
 
-  // Flood fill edges with blue BG color
+  // Debug: sample corner and edge pixels
+  const samplePixel = (x, y) => {
+    const idx = (y * width + x) * channels;
+    return `(${data[idx]},${data[idx+1]},${data[idx+2]}${channels===4?','+data[idx+3]:''})`;
+  };
+  const data = raw;
+  console.log(`Corner[0,0]: ${samplePixel(0,0)}`);
+  console.log(`Corner[${width-1},0]: ${samplePixel(width-1,0)}`);
+  console.log(`Edge[${Math.floor(width/2)},0]: ${samplePixel(Math.floor(width/2),0)}`);
+  console.log(`Edge[0,${Math.floor(height/2)}]: ${samplePixel(0,Math.floor(height/2))}`);
+  console.log(`Center[${Math.floor(width/2)},${Math.floor(height/4)}]: ${samplePixel(Math.floor(width/2),Math.floor(height/4))}`);
+
   const replaced = floodFillWithColor(raw, width, height, channels);
   console.log(`Flood fill replaced ${replaced} pixels with blue BG`);
 
-  // Create processed source from modified raw data
   const processed = sharp(raw, {
     raw: { width, height, channels }
   });
 
-  // Save as temp file for resizing
   const tmpPath = resolve(iconsDir, 'icon-processed.png');
   await processed.png().toFile(tmpPath);
 
-  // Generate all sizes
   for (const { name, size } of sizes) {
     const outPath = resolve(iconsDir, name);
     await sharp(tmpPath)
