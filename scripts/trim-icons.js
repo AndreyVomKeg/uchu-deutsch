@@ -15,21 +15,23 @@ const sizes = [
 async function trimIcons() {
   // Use icon-512 as source (largest)
   const sourcePath = resolve(iconsDir, 'icon-512.png');
-  
+
   for (const { name, size } of sizes) {
     const outPath = resolve(iconsDir, name);
+
     await sharp(sourcePath)
-      .trim()  // Remove white/light border
+      .flatten({ background: { r: 106, g: 155, b: 204 } })
+      .trim({ threshold: 80 })
       .resize(size, size, { fit: 'contain', background: { r: 106, g: 155, b: 204, alpha: 1 } })
       .png()
       .toFile(outPath + '.tmp');
-    
+
     // Replace original with trimmed version
     const { copyFileSync, unlinkSync } = await import('fs');
     unlinkSync(outPath);
     copyFileSync(outPath + '.tmp', outPath);
     unlinkSync(outPath + '.tmp');
-    
+
     console.log(`Trimmed ${name} (${size}x${size})`);
   }
 }
