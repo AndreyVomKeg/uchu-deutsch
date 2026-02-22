@@ -18,22 +18,24 @@ async function main() {
   const meta = await sharp(src).metadata();
   console.log(`Source: ${meta.width}x${meta.height}, ${meta.channels} ch`);
 
-  // Strategy: create a blurred background plate from the original,
-  // then composite the original on top. The blur extends edge colors
-  // into transparent areas, matching the gradient naturally.
+  // Step 1: Flatten FIRST onto detected BG, then blur heavily.
+  // This creates a smooth background plate where edge colors extend naturally.
+  // Flatten first ensures blur doesn't mix with transparent black.
   const bgPlate = await sharp(src)
-    .blur(50)
     .flatten({ background: { r: 108, g: 145, b: 186 } })
+    .blur(100)
     .toBuffer();
 
-  // Composite original over blurred background
+  // Step 2: Composite original (with alpha) over the blurred opaque plate.
+  // The original's opaque pixels dominate; semi-transparent edges blend
+  // with the matching blurred colors underneath.
   const tmpPath = resolve(iconsDir, 'icon-processed.png');
   await sharp(bgPlate)
     .composite([{ input: src, blend: 'over' }])
     .png()
     .toFile(tmpPath);
 
-  console.log('Composited over blurred background');
+  console.log('Composited over flattened+blurred background');
 
   for (const { name, size } of sizes) {
     const outPath = resolve(iconsDir, name);
