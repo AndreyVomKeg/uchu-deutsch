@@ -1,10 +1,13 @@
 import sharp from 'sharp';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync, unlinkSync, copyFileSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 const iconsDir = resolve(root, 'public/icons');
+
+const BG = { r: 106, g: 155, b: 204 };
 
 const sizes = [
   { name: 'icon-180.png', size: 180 },
@@ -12,31 +15,87 @@ const sizes = [
   { name: 'icon-512.png', size: 512 }
 ];
 
+function floodFillEdges(data, width, height, channels) {
+  const visited = new Uint8Array(width * height);
+  const queue = [];
+
+  const isLight = (idx) => {
+    const r = data[idx];
+    const g = data[idx + 1];
+    const b = data[idx + 2];
+    return r > 180 && g > 180 && b > 180;
+  };
+
+  // Add all edge pixels to queue
+  for (let x = 0; x < width; x++) {
+    queue.push([x, 0]);
+    queue.push([x, height - 1]);
+  }
+  for (let y = 0; y < height; y++) {
+    queue.push([0, y]);
+    queue.push([width - 1, y]);
+  }
+
+  while (queue.length > 0) {
+    const [x, y] = queue.shift();
+    if (x < 0 || x >= width || y < 0 || y >= height) continue;
+    const pos = y * width + x;
+    if (visited[pos]) continue;
+    visited[pos] = 1;
+
+    const idx = pos * channels;
+    if (!isLight(idx)) continue;
+
+    // Replace with bg color
+    data[idx] = BG.r;
+    data[idx + 1] = BG.g;
+    data[idx + 2] = BG.b;
+    data[idx + 3] = 255;
+
+    // Add neighbors
+    queue.push([x + 1, y]);
+    queue.push([x - 1, y]);
+    queue.push([x, y + 1]);
+    queue.push([x, y - 1]);
+  }
+}
+
 async function trimIcons() {
-  // Use icon-512 as source (largest)
   const sourcePath = resolve(iconsDir, 'icon-512.png');
+  const sourceBuffer = readFileSync(sourcePath);
+
+  const { data, info } = await sharp(sourceBuffer)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const { width, height, channels } = info;
+
+  // Flood fill from edges - replace light border pixels with bg
+  floodFillEdges(data, width, height, channels);
+
+  const cleanedBuffer = await sharp(data, { raw: { width, height, channels } })
+    .png()
+    .toBuffer();
 
   for (const { name, size } of sizes) {
     const outPath = resolve(iconsDir, name);
+    const tmpPath = outPath + '.tmp';
 
-    await sharp(sourcePath)
-      .flatten({ background: { r: 106, g: 155, b: 204 } })
-      .trim({ threshold: 80 })
-      .resize(size, size, { fit: 'contain', background: { r: 106, g: 155, b: 204, alpha: 1 } })
+    await sharp(cleanedBuffer)
+      .resize(size, size, { fit: 'contain', background: { ...BG, alpha: 1 } })
       .png()
-      .toFile(outPath + '.tmp');
+      .toFile(tmpPath);
 
-    // Replace original with trimmed version
-    const { copyFileSync, unlinkSync } = await import('fs');
     unlinkSync(outPath);
-    copyFileSync(outPath + '.tmp', outPath);
-    unlinkSync(outPath + '.tmp');
+    copyFileSync(tmpPath, outPath);
+    unlinkSync(tmpPath);
 
-    console.log(`Trimmed ${name} (${size}x${size})`);
+    console.log(`Processed ${name} (${size}x${size})`);
   }
 }
 
 trimIcons().catch(err => {
-  console.error('Icon trimming failed:', err);
+  console.error('Icon processing failed:', err);
   process.exit(1);
 });
