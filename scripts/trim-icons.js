@@ -21,98 +21,119 @@ async function main() {
   const ch = meta.channels;
   console.log(`Source: ${w}x${h}, ${ch} ch`);
 
-  const raw = await sharp(src).raw().toBuffer();
+  // First flatten the image to remove transparency, using a neutral gray
+  // Then read the raw pixels to analyze colors
+  const flatBuf = await sharp(src)
+    .flatten({ background: { r: 128, g: 128, b: 128 } })
+    .raw()
+    .toBuffer();
 
-  // Sample the blue BG color from center of each edge (25% inward)
-  const inset = Math.floor(w * 0.25);
-  const centerSamples = [
-    [Math.floor(w / 2), inset],           // top-ish center
-    [Math.floor(w / 2), h - inset],       // bottom-ish center
-    [inset, Math.floor(h / 2)],           // left-ish center
-    [w - inset, Math.floor(h / 2)],       // right-ish center
+  // Sample at ~5% inward from each edge center - this should be in the blue zone
+  const inset = Math.floor(w * 0.05);
+  const edgeSamples = [
+    [Math.floor(w / 2), inset],
+    [Math.floor(w / 2), h - 1 - inset],
+    [inset, Math.floor(h / 2)],
+    [w - 1 - inset, Math.floor(h / 2)],
   ];
 
   let rSum = 0, gSum = 0, bSum = 0;
-  for (const [x, y] of centerSamples) {
-    const idx = (y * w + x) * ch;
-    rSum += raw[idx]; gSum += raw[idx + 1]; bSum += raw[idx + 2];
-    console.log(`Inner sample (${x},${y}): rgb(${raw[idx]}, ${raw[idx+1]}, ${raw[idx+2]})`);
+  for (const [x, y] of edgeSamples) {
+    const idx = (y * w + x) * 3; // flattened = 3 channels
+    rSum += flatBuf[idx]; gSum += flatBuf[idx + 1]; bSum += flatBuf[idx + 2];
+    console.log(`Edge sample (${x},${y}): rgb(${flatBuf[idx]}, ${flatBuf[idx+1]}, ${flatBuf[idx+2]})`);
   }
-  const bgR = Math.round(rSum / centerSamples.length);
-  const bgG = Math.round(gSum / centerSamples.length);
-  const bgB = Math.round(bSum / centerSamples.length);
-  console.log(`Detected inner BG: rgb(${bgR}, ${bgG}, ${bgB})`);
+  const bgR = Math.round(rSum / edgeSamples.length);
+  const bgG = Math.round(gSum / edgeSamples.length);
+  const bgB = Math.round(bSum / edgeSamples.length);
+  console.log(`Detected BG: rgb(${bgR}, ${bgG}, ${bgB})`);
 
-  // Scan from top edge inward to find where the border ends
-  // Border pixel = significantly different from bgR/bgG/bgB
+  // Check if detected color looks like the expected blue (~108,145,186)
+  // If not, fall back to known blue
+  const isBlue = bgB > bgR && bgB > bgG && bgR < 150 && bgG < 180;
+  const finalR = isBlue ? bgR : 108;
+  const finalG = isBlue ? bgG : 145;
+  const finalB = isBlue ? bgB : 186;
+  console.log(`Using BG: rgb(${finalR}, ${finalG}, ${finalB}) (${isBlue ? 'detected' : 'fallback'})`);
+
+  // Now scan for the border width - look for where edge pixels differ from BG
+  // Use flattened raw buffer with correct BG for color comparison  
+  const flatBuf2 = await sharp(src)
+    .flatten({ background: { r: finalR, g: finalG, b: finalB } })
+    .raw()
+    .toBuffer();
+
   function colorDist(idx) {
-    const dr = raw[idx] - bgR;
-    const dg = raw[idx + 1] - bgG;
-    const db = raw[idx + 2] - bgB;
+    const dr = flatBuf2[idx] - finalR;
+    const dg = flatBuf2[idx + 1] - finalG;
+    const db = flatBuf2[idx + 2] - finalB;
     return Math.sqrt(dr*dr + dg*dg + db*db);
   }
 
-  const threshold = 40; // color distance threshold
+  const threshold = 30;
+  const maxCrop = Math.floor(w * 0.04); // max 4% crop per side
   const cx = Math.floor(w / 2);
   const cy = Math.floor(h / 2);
 
-  // Find top border
   let topCrop = 0;
-  for (let y = 0; y < h / 2; y++) {
-    const idx = (y * w + cx) * ch;
-    if (colorDist(idx) < threshold) { topCrop = y; break; }
+  for (let y = 0; y < maxCrop; y++) {
+    if (colorDist((y * w + cx) * 3) < threshold) { topCrop = y; break; }
+    topCrop = y + 1;
   }
 
-  // Find bottom border
-  let bottomCrop = h;
-  for (let y = h - 1; y > h / 2; y--) {
-    const idx = (y * w + cx) * ch;
-    if (colorDist(idx) < threshold) { bottomCrop = y + 1; break; }
+  let bottomCrop = 0;
+  for (let y = h - 1; y >= h - maxCrop; y--) {
+    if (colorDist((y * w + cx) * 3) < threshold) { bottomCrop = h - 1 - y; break; }
+    bottomCrop = h - y;
   }
 
-  // Find left border
   let leftCrop = 0;
-  for (let x = 0; x < w / 2; x++) {
-    const idx = (cy * w + x) * ch;
-    if (colorDist(idx) < threshold) { leftCrop = x; break; }
+  for (let x = 0; x < maxCrop; x++) {
+    if (colorDist((cy * w + x) * 3) < threshold) { leftCrop = x; break; }
+    leftCrop = x + 1;
   }
 
-  // Find right border  
-  let rightCrop = w;
-  for (let x = w - 1; x > w / 2; x--) {
-    const idx = (cy * w + x) * ch;
-    if (colorDist(idx) < threshold) { rightCrop = x + 1; break; }
+  let rightCrop = 0;
+  for (let x = w - 1; x >= w - maxCrop; x--) {
+    if (colorDist((cy * w + x) * 3) < threshold) { rightCrop = w - 1 - x; break; }
+    rightCrop = w - x;
   }
 
-  console.log(`Border detected: top=${topCrop}, bottom=${h-bottomCrop}, left=${leftCrop}, right=${w-rightCrop}`);
+  // Add 1px extra to ensure clean edge
+  topCrop = Math.min(topCrop + 1, maxCrop);
+  bottomCrop = Math.min(bottomCrop + 1, maxCrop);
+  leftCrop = Math.min(leftCrop + 1, maxCrop);
+  rightCrop = Math.min(rightCrop + 1, maxCrop);
 
-  // Crop the border off and flatten onto BG color
-  const cropW = rightCrop - leftCrop;
-  const cropH = bottomCrop - topCrop;
-  
+  console.log(`Crop: top=${topCrop}, bottom=${bottomCrop}, left=${leftCrop}, right=${rightCrop} (max=${maxCrop})`);
+
+  // Crop off the border, flatten onto BG
+  const cropW = w - leftCrop - rightCrop;
+  const cropH = h - topCrop - bottomCrop;
+
   const cropped = await sharp(src)
     .extract({ left: leftCrop, top: topCrop, width: cropW, height: cropH })
-    .flatten({ background: { r: bgR, g: bgG, b: bgB } })
+    .flatten({ background: { r: finalR, g: finalG, b: finalB } })
     .toBuffer();
 
   console.log(`Cropped to ${cropW}x${cropH}`);
 
-  // Create square output: place cropped image centered on BG-colored square
-  const maxDim = Math.max(cropW, cropH);
+  // Place on square BG-colored canvas
+  const dim = Math.max(cropW, cropH);
   const tmpPath = resolve(iconsDir, 'icon-processed.png');
-  
+
   await sharp({
-    create: { width: maxDim, height: maxDim, channels: 3, background: { r: bgR, g: bgG, b: bgB } }
+    create: { width: dim, height: dim, channels: 3, background: { r: finalR, g: finalG, b: finalB } }
   })
     .composite([{
       input: cropped,
-      left: Math.floor((maxDim - cropW) / 2),
-      top: Math.floor((maxDim - cropH) / 2)
+      left: Math.floor((dim - cropW) / 2),
+      top: Math.floor((dim - cropH) / 2)
     }])
     .png()
     .toFile(tmpPath);
 
-  console.log(`Created ${maxDim}x${maxDim} square icon`);
+  console.log(`Created ${dim}x${dim} square icon`);
 
   for (const { name, size } of sizes) {
     const outPath = resolve(iconsDir, name);
