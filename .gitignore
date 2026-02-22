@@ -137,3 +137,9 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+
+# Generated PNG icons (built from SVG at build time)
+public/icon-180.png
+public/icon-192.png
+public/icon-512.png
