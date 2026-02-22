@@ -23,7 +23,7 @@ function floodFillEdges(data, width, height, channels) {
     const r = data[idx];
     const g = data[idx + 1];
     const b = data[idx + 2];
-    return r > 180 && g > 180 && b > 180;
+        return r > 140 && g > 140 && b > 140;
   };
 
   // Add all edge pixels to queue
